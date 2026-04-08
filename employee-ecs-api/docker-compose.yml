@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: employees
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d employees"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/employees
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      S3_EXPORT_BUCKET: ${S3_EXPORT_BUCKET:-}
+      SNS_TOPIC_ARN: ${SNS_TOPIC_ARN:-}
+      EMPLOYEE_CSV_PATH: employee_data.csv
+    volumes:
+      - ./employee_data.csv:/app/employee_data.csv:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

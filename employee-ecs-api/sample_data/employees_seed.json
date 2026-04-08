@@ -1,0 +1,4 @@
+[
+  { "EMPLOYEE_ID": 9001, "GENDER": "F", "EXPERIENCE_YEARS": 4, "POSITION": "DevOps Engineer", "SALARY": "109976.00" },
+  { "EMPLOYEE_ID": 9002, "GENDER": "M", "EXPERIENCE_YEARS": 6, "POSITION": "Web Developer", "SALARY": "120088.00" }
+]

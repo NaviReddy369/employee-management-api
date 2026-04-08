@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Employee API — UI</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; background: #0f1419; color: #e6edf3; }
+    body { max-width: 920px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.35rem; margin-bottom: 0.25rem; }
+    h2 { font-size: 1.05rem; margin: 0 0 0.75rem; }
+    section { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .runbox { background: #0d1117; border: 1px solid #388bfd66; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .runbox ol { margin: 0.5rem 0 0 1.1rem; padding: 0; }
+    .runbox li { margin: 0.35rem 0; }
+    .links { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+    .links a {
+      display: inline-block; padding: 0.4rem 0.75rem; border-radius: 6px;
+      background: #21262d; border: 1px solid #30363d; color: #58a6ff; text-decoration: none; font-size: 0.9rem;
+    }
+    .links a:hover { border-color: #58a6ff; }
+    label { display: block; margin-top: 0.5rem; font-size: 0.85rem; color: #8b949e; }
+    input, select, button { width: 100%; box-sizing: border-box; padding: 0.5rem 0.6rem; margin-top: 0.2rem; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: #e6edf3; }
+    button { cursor: pointer; background: #238636; border-color: #238636; font-weight: 600; margin-top: 0.75rem; }
+    button.secondary { background: #21262d; border-color: #30363d; }
+    button.rowbtn { width: auto; display: inline-block; margin-right: 0.5rem; margin-top: 0.75rem; }
+    pre { background: #0d1117; padding: 1rem; overflow: auto; border-radius: 6px; font-size: 0.8rem; border: 1px solid #30363d; max-height: 320px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+    .hint { font-size: 0.8rem; color: #8b949e; margin-top: 0.25rem; line-height: 1.45; }
+    code { background: #21262d; padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.85em; }
+  </style>
+</head>
+<body>
+  <h1>Employee API — local UI</h1>
+  <p class="hint">Open this page at <code>http://127.0.0.1:8000/</code> (same origin) so the buttons can call the API.</p>
+
+  <div class="runbox">
+    <h2>How to run</h2>
+    <ol>
+      <li>In the project folder, start the stack: <code>docker compose up --build</code></li>
+      <li>Wait until the API log shows <code>Application startup complete</code>.</li>
+      <li>Open <code>http://127.0.0.1:8000/</code> in your browser (this page).</li>
+    </ol>
+    <p class="hint">If you changed the database schema, reset the DB volume once: <code>docker compose down -v</code> then <code>docker compose up --build</code>.</p>
+    <div class="links">
+      <a href="/docs" target="_blank" rel="noopener">Swagger UI — try all endpoints</a>
+      <a href="/redoc" target="_blank" rel="noopener">ReDoc</a>
+      <a href="/openapi.json" target="_blank" rel="noopener">OpenAPI JSON</a>
+    </div>
+  </div>
+
+  <section>
+    <h2>Import <code>employee_data.csv</code></h2>
+    <p class="hint">
+      Columns match the file: <code>ID</code> → <code>EMPLOYEE_ID</code>;
+      <code>Gender</code> → <code>GENDER</code> (F or M);
+      <code>Experience (Years)</code> → <code>EXPERIENCE_YEARS</code>;
+      <code>Position</code> → <code>POSITION</code>;
+      <code>Salary</code> → <code>SALARY</code>.
+      Re-import skips rows whose ID already exists.
+    </p>
+    <button type="button" class="secondary rowbtn" id="btn_preview">Preview mapping (first 5)</button>
+    <button type="button" class="rowbtn" id="btn_import">Import all rows into PostgreSQL</button>
+    <pre id="out_csv"></pre>
+  </section>
+
+  <section>
+    <h2>Create (POST)</h2>
+    <p class="hint">
+      Same fields as <code>employee_data.csv</code>, same order: ID → Gender → Experience → <strong>Position</strong> → Salary.
+      <strong>POSITION</strong> is required (job title); do not leave it blank.
+    </p>
+    <div class="row">
+      <div><label>EMPLOYEE_ID</label><input id="c_id" type="number" placeholder="10001" /></div>
+      <div><label>GENDER</label>
+        <select id="c_gender"><option value="F">F</option><option value="M">M</option></select>
+      </div>
+    </div>
+    <div class="row">
+      <div><label>EXPERIENCE_YEARS</label><input id="c_exp" type="number" min="0" placeholder="4" /></div>
+      <div><label>POSITION</label><input id="c_pos" type="text" placeholder="DevOps Engineer" autocomplete="off" /></div>
+    </div>
+    <div><label>SALARY</label><input id="c_sal" type="text" placeholder="109976.00" autocomplete="off" /></div>
+    <button type="button" id="btn_create">Create employee</button>
+    <pre id="out_create"></pre>
+  </section>
+
+  <section>
+    <h2>Get by ID / Delete / Update</h2>
+    <label>Employee ID</label><input id="eid" type="number" placeholder="1" />
+    <button type="button" id="btn_get">Get</button>
+    <button type="button" class="secondary" id="btn_del">Delete</button>
+    <p class="hint" style="margin-top:0.75rem;">PUT — leave blank to leave unchanged.</p>
+    <div class="row">
+      <div><label>GENDER</label><select id="u_gender"><option value="">—</option><option value="F">F</option><option value="M">M</option></select></div>
+      <div><label>EXPERIENCE_YEARS</label><input id="u_exp" type="number" min="0" placeholder="" /></div>
+    </div>
+    <div><label>POSITION</label><input id="u_pos" type="text" placeholder="" /></div>
+    <div><label>SALARY</label><input id="u_sal" type="text" placeholder="" /></div>
+    <button type="button" id="btn_put">PUT update</button>
+    <pre id="out_one"></pre>
+  </section>
+
+  <section>
+    <h2>List & filters</h2>
+    <div class="row">
+      <div><label>Year (optional, with month)</label><input id="y" type="number" placeholder="2026" /></div>
+      <div><label>Month 1–12 (optional)</label><input id="m" type="number" placeholder="3" /></div>
+    </div>
+    <button type="button" id="btn_list">List employees</button>
+    <pre id="out_list"></pre>
+  </section>
+
+  <section>
+    <h2>Export to S3 + SNS (needs AWS env)</h2>
+    <button type="button" class="secondary" id="btn_export">GET /employees/export/s3</button>
+    <pre id="out_export"></pre>
+  </section>
+
+  <script>
+    const api = (path, opt) => fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opt })
+      .then(async r => {
+        const t = await r.text();
+        let j; try { j = JSON.parse(t); } catch { j = t; }
+        if (!r.ok) throw new Error(typeof j === 'object' ? JSON.stringify(j, null, 2) : t);
+        return j;
+      });
+
+    document.getElementById('btn_preview').onclick = async () => {
+      try {
+        const res = await api('/employees/import/csv/preview');
+        document.getElementById('out_csv').textContent = JSON.stringify(res, null, 2);
+      } catch (e) {
+        document.getElementById('out_csv').textContent = e.message;
+      }
+    };
+
+    document.getElementById('btn_import').onclick = async () => {
+      try {
+        const r = await fetch('/employees/import/csv', { method: 'POST' });
+        const t = await r.text();
+        let j; try { j = JSON.parse(t); } catch { j = t; }
+        if (!r.ok) throw new Error(typeof j === 'object' ? JSON.stringify(j, null, 2) : t);
+        document.getElementById('out_csv').textContent = JSON.stringify(j, null, 2);
+      } catch (e) {
+        document.getElementById('out_csv').textContent = e.message;
+      }
+    };
+
+    document.getElementById('btn_create').onclick = async () => {
+      const pos = document.getElementById('c_pos').value.trim();
+      if (!pos) {
+        document.getElementById('out_create').textContent =
+          'POSITION is empty. Enter a job title (e.g. DevOps Engineer) — same as CSV column Position.';
+        return;
+      }
+      const body = {
+        EMPLOYEE_ID: parseInt(document.getElementById('c_id').value, 10),
+        GENDER: document.getElementById('c_gender').value,
+        EXPERIENCE_YEARS: parseInt(document.getElementById('c_exp').value, 10),
+        POSITION: pos,
+        SALARY: document.getElementById('c_sal').value.trim()
+      };
+      try {
+        const res = await api('/employees', { method: 'POST', body: JSON.stringify(body) });
+        document.getElementById('out_create').textContent = JSON.stringify(res, null, 2);
+      } catch (e) {
+        document.getElementById('out_create').textContent = e.message;
+      }
+    };
+
+    document.getElementById('btn_get').onclick = async () => {
+      const id = document.getElementById('eid').value;
+      try {
+        const res = await api('/employees/' + encodeURIComponent(id));
+        document.getElementById('out_one').textContent = JSON.stringify(res, null, 2);
+      } catch (e) { document.getElementById('out_one').textContent = e.message; }
+    };
+
+    document.getElementById('btn_del').onclick = async () => {
+      const id = document.getElementById('eid').value;
+      try {
+        const r = await fetch('/employees/' + encodeURIComponent(id), { method: 'DELETE' });
+        if (!r.ok) {
+          const t = await r.text();
+          let j; try { j = JSON.parse(t); } catch { j = t; }
+          throw new Error(typeof j === 'object' ? JSON.stringify(j, null, 2) : t);
+        }
+        document.getElementById('out_one').textContent = 'Deleted (204)';
+      } catch (e) { document.getElementById('out_one').textContent = e.message; }
+    };
+
+    document.getElementById('btn_put').onclick = async () => {
+      const id = document.getElementById('eid').value;
+      const body = {};
+      const g = document.getElementById('u_gender').value;
+      const ex = document.getElementById('u_exp').value.trim();
+      const pos = document.getElementById('u_pos').value.trim();
+      const s = document.getElementById('u_sal').value.trim();
+      if (g) body.GENDER = g;
+      if (ex !== '') body.EXPERIENCE_YEARS = parseInt(ex, 10);
+      if (pos) body.POSITION = pos;
+      if (s) body.SALARY = s;
+      try {
+        const res = await api('/employees/' + encodeURIComponent(id), { method: 'PUT', body: JSON.stringify(body) });
+        document.getElementById('out_one').textContent = JSON.stringify(res, null, 2);
+      } catch (e) { document.getElementById('out_one').textContent = e.message; }
+    };
+
+    document.getElementById('btn_list').onclick = async () => {
+      const y = document.getElementById('y').value;
+      const m = document.getElementById('m').value;
+      let q = '';
+      if (y && m) q = '?year=' + encodeURIComponent(y) + '&month=' + encodeURIComponent(m);
+      else if (y) q = '?year=' + encodeURIComponent(y);
+      try {
+        const res = await api('/employees' + q);
+        document.getElementById('out_list').textContent = JSON.stringify(res, null, 2);
+      } catch (e) { document.getElementById('out_list').textContent = e.message; }
+    };
+
+    document.getElementById('btn_export').onclick = async () => {
+      try {
+        const res = await api('/employees/export/s3');
+        document.getElementById('out_export').textContent = JSON.stringify(res, null, 2);
+      } catch (e) { document.getElementById('out_export').textContent = e.message; }
+    };
+  </script>
+</body>
+</html>
